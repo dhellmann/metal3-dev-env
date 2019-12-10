@@ -42,11 +42,11 @@ ssh_user: root
 #   *  The first bridge network defined will be used for pxe booting
 manage_baremetal: 'y'
 networks:
-  - name: provisioning
-    bridge: provisioning
+  - name: "{{ lookup('env', 'PRO_BRIDGE_NAME') }}"
+    bridge: "{{ lookup('env', 'PRO_BRIDGE_NAME') }}"
     forward_mode: bridge
-  - name: baremetal
-    bridge: baremetal
+  - name: "{{ lookup('env', 'INT_BRIDGE_NAME') }}"
+    bridge: "{{ lookup('env', 'INT_BRIDGE_NAME') }}"
     forward_mode: "{% if manage_baremetal == 'y' %}nat{% else %}bridge{% endif %}"
     address: "{{ baremetal_network_cidr|nthhost(1) }}"
     netmask: "{{ baremetal_network_cidr|ipaddr('netmask') }}"

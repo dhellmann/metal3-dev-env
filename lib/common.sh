@@ -37,6 +37,9 @@ INT_IF=${INT_IF:-}
 ROOT_DISK_NAME=${ROOT_DISK_NAME-"/dev/sda"}
 #Container runtime
 CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-"podman"}
+# Network bridge names
+PRO_BRIDGE_NAME=${PRO_BRIDGE_NAME:-provisioning}
+INT_BRIDGE_NAME=${INT_BRIDGE_NAME:-baremetal}
 
 if [[ "${CONTAINER_RUNTIME}" == "podman" ]]; then
   export POD_NAME="--pod ironic-pod"
@@ -339,13 +342,13 @@ function init_minikube() {
     # not exist. Attempting to start Minikube will fail until it is created.
     if ! echo "$MINIKUBE_IFACES" | grep -w provisioning  > /dev/null ; then
       sudo virsh attach-interface --domain minikube \
-          --model virtio --source provisioning \
+          --model virtio --source ${PRO_BRIDGE_NAME} \
           --type network --config
     fi
 
     if ! echo "$MINIKUBE_IFACES" | grep -w baremetal  > /dev/null ; then
       sudo virsh attach-interface --domain minikube \
-          --model virtio --source baremetal \
+          --model virtio --source ${INT_BRIDGE_NAME} \
           --type network --config
     fi
 }

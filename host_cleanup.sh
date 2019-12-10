@@ -51,7 +51,7 @@ if [[ $OS == "centos" || $OS == "rhel" ]]; then
   fi
   # Leaving this around causes issues when the host is rebooted
   if [ "$MANAGE_BR_BRIDGE" == "y" ]; then
-      sudo ifdown baremetal || true
-      sudo rm -f /etc/sysconfig/network-scripts/ifcfg-baremetal || true
+      sudo ifdown ${INT_BRIDGE_NAME} || true
+      sudo rm -f /etc/sysconfig/network-scripts/ifcfg-${INT_BRIDGE_NAME} || true
   fi
 fi

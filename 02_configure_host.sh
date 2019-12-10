@@ -49,34 +49,34 @@ else
       # Adding an IP address in the libvirt definition for this network results in
       # dnsmasq being run, we don't want that as we have our own dnsmasq, so set
       # the IP address here
-      if [ ! -e /etc/sysconfig/network-scripts/ifcfg-provisioning ] ; then
-          echo -e "DEVICE=provisioning\nTYPE=Bridge\nONBOOT=yes\nNM_CONTROLLED=no\nBOOTPROTO=static\nIPADDR=172.22.0.1\nNETMASK=255.255.255.0" | sudo dd of=/etc/sysconfig/network-scripts/ifcfg-provisioning
+      if [ ! -e /etc/sysconfig/network-scripts/ifcfg-${PRO_BRIDGE_NAME} ] ; then
+          echo -e "DEVICE=${PRO_BRIDGE_NAME}\nTYPE=Bridge\nONBOOT=yes\nNM_CONTROLLED=no\nBOOTPROTO=static\nIPADDR=172.22.0.1\nNETMASK=255.255.255.0" | sudo dd of=/etc/sysconfig/network-scripts/ifcfg-${PRO_BRIDGE_NAME}
       fi
-      sudo ifdown provisioning || true
-      sudo ifup provisioning
+      sudo ifdown ${PRO_BRIDGE_NAME} || true
+      sudo ifup ${PRO_BRIDGE_NAME}
 
       # Need to pass the provision interface for bare metal
       if [ "$PRO_IF" ]; then
-          echo -e "DEVICE=$PRO_IF\nTYPE=Ethernet\nONBOOT=yes\nNM_CONTROLLED=no\nBRIDGE=provisioning" | sudo dd of="/etc/sysconfig/network-scripts/ifcfg-$PRO_IF"
+          echo -e "DEVICE=$PRO_IF\nTYPE=Ethernet\nONBOOT=yes\nNM_CONTROLLED=no\nBRIDGE=${PRO_BRIDGE_NAME}" | sudo dd of="/etc/sysconfig/network-scripts/ifcfg-$PRO_IF"
           sudo ifdown "$PRO_IF" || true
           sudo ifup "$PRO_IF"
       fi
   fi
 
   if [ "$MANAGE_INT_BRIDGE" == "y" ]; then
-      # Create the baremetal bridge
-      if [ ! -e /etc/sysconfig/network-scripts/ifcfg-baremetal ] ; then
-          echo -e "DEVICE=baremetal\nTYPE=Bridge\nONBOOT=yes\nNM_CONTROLLED=no" | sudo dd of=/etc/sysconfig/network-scripts/ifcfg-baremetal
+      # Create the internal bridge
+      if [ ! -e /etc/sysconfig/network-scripts/ifcfg-${INT_BRIDGE_NAME} ] ; then
+          echo -e "DEVICE=${INT_BRIDGE_NAME}\nTYPE=Bridge\nONBOOT=yes\nNM_CONTROLLED=no" | sudo dd of=/etc/sysconfig/network-scripts/ifcfg-${INT_BRIDGE_NAME}
       fi
-      sudo ifdown baremetal || true
-      sudo ifup baremetal
+      sudo ifdown ${INT_BRIDGE_NAME} || true
+      sudo ifup ${INT_BRIDGE_NAME}
 
       # Add the internal interface to it if requests, this may also be the interface providing
       # external access so we need to make sure we maintain dhcp config if its available
       if [ "$INT_IF" ]; then
-          echo -e "DEVICE=$INT_IF\nTYPE=Ethernet\nONBOOT=yes\nNM_CONTROLLED=no\nBRIDGE=baremetal" | sudo dd of="/etc/sysconfig/network-scripts/ifcfg-$INT_IF"
+          echo -e "DEVICE=$INT_IF\nTYPE=Ethernet\nONBOOT=yes\nNM_CONTROLLED=no\nBRIDGE=${INT_BRIDGE_NAME}" | sudo dd of="/etc/sysconfig/network-scripts/ifcfg-$INT_IF"
           if sudo nmap --script broadcast-dhcp-discover -e "$INT_IF" | grep "IP Offered" ; then
-              echo -e "\nBOOTPROTO=dhcp\n" | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-baremetal
+              echo -e "\nBOOTPROTO=dhcp\n" | sudo tee -a /etc/sysconfig/network-scripts/ifcfg-${INT_BRIDGE_NAME}
               sudo systemctl restart network
           else
              sudo systemctl restart network
@@ -86,8 +86,8 @@ else
 
   # restart the libvirt network so it applies an ip to the bridge
   if [ "$MANAGE_BR_BRIDGE" == "y" ] ; then
-      sudo virsh net-destroy baremetal
-      sudo virsh net-start baremetal
+      sudo virsh net-destroy ${INT_BRIDGE_NAME}
+      sudo virsh net-start ${INT_BRIDGE_NAME}
       if [ "$INT_IF" ]; then #Need to bring UP the NIC after destroying the libvirt network
           sudo ifup "$INT_IF"
       fi
@@ -102,7 +102,7 @@ ANSIBLE_FORCE_COLOR=true ansible-playbook \
 # Need to route traffic from the provisioning host.
 if [ "$EXT_IF" ]; then
   sudo iptables -t nat -A POSTROUTING --out-interface "$EXT_IF" -j MASQUERADE
-  sudo iptables -A FORWARD --in-interface baremetal -j ACCEPT
+  sudo iptables -A FORWARD --in-interface ${INT_BRIDGE_NAME} -j ACCEPT
 fi
 
 # Switch NetworkManager to internal DNS

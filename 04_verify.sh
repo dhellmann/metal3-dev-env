@@ -195,7 +195,7 @@ EXPTD_V1ALPHA2_PODS="control-plane:cabpk-controller-manager \
   control-plane:capbm-controller-manager \
   control-plane:cluster-api-controller-manager \
   name:metal3-baremetal-operator"
-BRIDGES="provisioning baremetal"
+BRIDGES="${PRO_BRIDGE_NAME} ${INT_BRIDGE_NAME}"
 EXPTD_CONTAINERS="httpd registry vbmc sushy-tools"
 
 FAILS=0

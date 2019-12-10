@@ -1,6 +1,6 @@
 use_firewalld: true
-baremetal_interface: baremetal
-provisioning_interface: provisioning
+baremetal_interface: "{{ lookup('env', 'INT_BRIDGE_NAME') }}"
+provisioning_interface: "{{ lookup('env', 'PRO_BRIDGE_NAME') }}"
 vbmc_port_range: "6230:6235"
 ironic_ports:
   - "6180"
